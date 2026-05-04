@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dunia Anak Hebat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --pink: #FF85A1; --blue: #4EA8DE; --yellow: #FFD166; --green: #06D6A0; --purple: #7400b8; }
+        
+        body { 
+            font-family: 'Fredoka One', cursive; 
+            margin: 0; 
+            overflow: hidden; 
+            touch-action: none;
+
+            background: url('background.jpeg') no-repeat center center;
+            background-size: contain;
+            background-color: #87CEEB; /* warna cadangan */
+        }
+        html, body {
+            height: 100%;
+            width: 100%;
+            position: fixed; /* Mencegah scrolling yang tidak diinginkan pada iOS */
+        }
+
+        body {
+            animation: fadeStart 1.5s ease;
+        }
+
+        @keyframes fadeStart {
+            from { opacity: 0; transform: scale(1.05); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .menu-container {
+            animation: slideUp 1s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translate(-50%, 50px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        
+        .menu-container {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; position: absolute; }
+        .active { display: flex; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        .btn-menu { width: 280px; padding: 20px; margin: 10px; font-size: 22px; border: none; border-radius: 30px; color: white; cursor: pointer; box-shadow: 0 8px 0 rgba(0,0,0,0.1); transition: 0.1s; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        .btn-menu:active { transform: translateY(4px); box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        
+        .btn-back-top { position: absolute; top: 15px; left: 15px; background: #999; padding: 12px 20px; font-size: 14px; z-index: 20; border-radius: 20px; color: white; border: none; cursor: pointer; }
+
+        /* TOMBOL PAUSE MUSIK */
+        #btn-music-toggle { 
+            position: absolute; top: 15px; right: 15px; 
+            background: white; border: 3px solid var(--blue); 
+            width: 50px; height: 50px; border-radius: 50%; 
+            font-size: 24px; cursor: pointer; z-index: 100;
+            display: none; align-items: center; justify-content: center;
+            box-shadow: 0 4px 0 var(--blue);
+        }
+
+        .canvas-container { 
+            position: relative; background: white; border: 12px solid var(--yellow); 
+            border-radius: 40px; width: 92vw; height: 55vh;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+        }
+        canvas { position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair; }
+
+        #hint-img { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 2; }
+
+        .svg-pattern-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 1; }
+        #pattern-text { letter-spacing: 15px; }
+
+        .palette { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; justify-content: center; max-width: 95vw; background: white; padding: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .color-dot { width: 35px; height: 35px; border-radius: 50%; border: 3px solid #f0f0f0; cursor: pointer; transition: 0.2s; }
+        
+        .brush-control { margin-top: 10px; display: flex; align-items: center; gap: 10px; background: white; padding: 5px 15px; border-radius: 15px; font-size: 14px; }
+
+        .controls { margin-top: 15px; display: flex; gap: 10px; }
+        .btn-control { padding: 12px 20px; border: none; border-radius: 20px; color: white; cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        .btn-control:disabled { background: #ccc !important; cursor: not-allowed; box-shadow: none; opacity: 0.7; }
+
+        #modal-finish {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 200; display: none;
+            flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+    .btn-menu {
+        width: 90%;
+        font-size: 18px;
+    }
+
+    .canvas-container {
+        height: 50vh;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" loop src="musik.mp3"></audio>
+    <audio id="sfx-success" src="Sound effect yeay.mp3"></audio>
+
+    <button id="btn-music-toggle" onclick="toggleMusic()">🔊</button>
+
+    <div class="menu-container">
+    <button class="btn-menu" style="background: var(--blue);" onclick="startApp(); showScreen('scr-submenu-write')">✍️ MENULIS</button>
+    <button class="btn-menu" style="background: var(--pink);" onclick="startApp(); showScreen('scr-diff-color')">🎨 MEWARNAI</button>
+</div>
+
+    <div class="screen" id="scr-submenu-write" style="background: var(--blue);">
+        <button class="btn-back-top" onclick="showScreen('scr-welcome')">Kembali</button>
+        <h2 style="color: white;">Pilih Pelajaran:</h2>
+        <button class="btn-menu" style="background: var(--yellow);" onclick="startMode('write', 'numbers')">1 2 3 (Angka)</button>
+        <button class="btn-menu" style="background: var(--pink);" onclick="startMode('write', 'words')">A B C (Abjad)</button>
+    </div>
+
+    <div class="screen" id="scr-diff-color" style="background: var(--pink);">
+        <button class="btn-back-top" onclick="showScreen('scr-welcome')">Kembali</button>
+        <h2 style="color: white;">Tingkat Kesulitan:</h2>
+        <button class="btn-menu" style="background: #a2d2ff;" onclick="startMode('color', 'easy')">😊 MUDAH</button>
+        <button class="btn-menu" style="background: #ffafcc;" onclick="startMode('color', 'medium')">😐 SEDANG</button>
+        <button class="btn-menu" style="background: #ff595e;" onclick="startMode('color', 'hard')">🧐 SULIT</button>
+    </div>
+
+    <div class="screen" id="scr-game" style="background: #eef2f3;">
+        <button class="btn-back-top" onclick="showScreen('scr-welcome')">Menu Utama</button>
+        
+        <div class="canvas-container" id="container">
+            <div id="hint-img"></div>
+            <div class="svg-pattern-layer" id="svg-layer">
+                <svg width="100%" height="250">
+                    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
+                          font-family="Arial" font-size="120" font-weight="bold"
+                          fill="none" stroke="#D3D3D3" stroke-width="3" 
+                          stroke-dasharray="12,12" id="pattern-text"></text>
+                </svg>
+            </div>
+            <img id="sketch-display" src="" style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.3; display: none; pointer-events: none; z-index: 1;">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div class="palette" id="paint-palette">
+            <div class="color-dot" style="background: #FF0000;" onclick="changeBrush('#FF0000')"></div>
+            <div class="color-dot" style="background: #FF7F00;" onclick="changeBrush('#FF7F00')"></div>
+            <div class="color-dot" style="background: #FFFF00;" onclick="changeBrush('#FFFF00')"></div>
+            <div class="color-dot" style="background: #00FF00;" onclick="changeBrush('#00FF00')"></div>
+            <div class="color-dot" style="background: #008000;" onclick="changeBrush('#008000')"></div>
+            <div class="color-dot" style="background: #00FFFF;" onclick="changeBrush('#00FFFF')"></div>
+            <div class="color-dot" style="background: #0000FF;" onclick="changeBrush('#0000FF')"></div>
+            <div class="color-dot" style="background: #8B00FF;" onclick="changeBrush('#8B00FF')"></div>
+            <div class="color-dot" style="background: #FF1493;" onclick="changeBrush('#FF1493')"></div>
+            <div class="color-dot" style="background: #A52A2A;" onclick="changeBrush('#A52A2A')"></div>
+            <div class="color-dot" style="background: #000000;" onclick="changeBrush('#000000')"></div>
+            <div class="color-dot" style="background: #FFFFFF; border: 1px solid #ddd;" onclick="changeBrush('#FFFFFF')"></div>
+        </div>
+
+        <div class="brush-control">
+            <span>✏️ Ukuran:</span>
+            <input type="range" id="brushSize" min="5" max="60" value="15" oninput="changeBrushSize(this.value)">
+        </div>
+
+        <div class="controls">
+            <button class="btn-control" style="background: #999;" onclick="prevStep()">⬅️ Kembali</button>
+            <button class="btn-control" style="background: #95a5a6;" onclick="clearCanvas()">🧹 Hapus</button>
+            <button class="btn-control" id="btn-next" style="background: var(--green);" onclick="finishAction()" disabled>Lanjut ➡️</button>
+        </div>
+    </div>
+
+    <div id="modal-finish">
+        <h1>🏆 HEBAT! 🏆</h1>
+        <p>Kamu luar biasa! Semua tugas selesai.</p>
+        <div style="font-size: 60px; margin: 20px;">⭐⭐⭐</div>
+        <button class="btn-menu" style="background: var(--purple);" onclick="goToHome()">KE MENU UTAMA</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('container');
+        const patternText = document.getElementById('pattern-text');
+        const hintImg = document.getElementById('hint-img');
+        const sketchDisplay = document.getElementById('sketch-display');
+        const palette = document.getElementById('paint-palette');
+        const svgLayer = document.getElementById('svg-layer');
+        const btnNext = document.getElementById('btn-next');
+        const brushInput = document.getElementById('brushSize');
+        const bgMusic = document.getElementById('bg-music');
+        const sfxSuccess = document.getElementById('sfx-success');
+        const musicToggle = document.getElementById('btn-music-toggle');
+
+        let painting = false;
+        let isCanvasDirty = false;
+        let mode = ''; let type = ''; let index = 0;
+
+        const dataWords = [
+            {t: 'BILAL', i: '👦'}, {t: 'MATA', i: '👁️'}, {t: 'PENSIL', i: '✏️'},
+            {t: 'KURSI', i: '🪑'}, {t: 'RAMBUT', i: '💇'}, {t: 'MEJA', i: '🪑'},
+            {t: 'BAJU', i: '👕'}, {t: 'TELINGA', i: '👂'}, {t: 'MAKAN', i: '🍽️'},
+            {t: 'CELANA', i: '👖'}, {t: 'KEPALA', i: '👤'}, {t: 'MINUM', i: '🥛'},
+            {t: 'SEPATU', i: '👟'}, {t: 'TANGAN', i: '🖐️'}, {t: 'MANDI', i: '🛁'},
+            {t: 'DASI', i: '👔'}, {t: 'KAKI', i: '🦶'}, {t: 'SEKOLAH', i: '🏫'},
+            {t: 'TAS', i: '🎒'}, {t: 'BUKU', i: '📖'}, {t: 'BELAJAR', i: '📝'}
+        ];
+
+        const sketches = {
+            easy: ['apel.jpg', 'bola.jpg', 'bunga.jpg', 'cabe.jpg', 'kapal.jpg'],
+            medium: ['balon.jpg', 'bebek.jpg', 'cangkir.jpg', 'eskrim.jpg', 'mobil.jpg'],
+            hard: ['dino.jpg', 'mario.jpg', 'putri.jpg', 'sapi.jpg', 'traktor.jpg']
+        };
+
+        function startApp() {
+            bgMusic.play().catch(e => console.log("Audio play blocked"));
+            bgMusic.volume = 0.2;
+            musicToggle.style.display = 'flex'; // Tampilkan tombol musik
+        }
+
+        function toggleMusic() {
+            if (bgMusic.paused) {
+                bgMusic.play();
+                musicToggle.innerText = '🔊';
+            } else {
+                bgMusic.pause();
+                musicToggle.innerText = '🔇';
+            }
+        }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('modal-finish').style.display = 'none';
+        }
+
+        function startMode(m, t) {
+            mode = m; type = t; index = 0;
+            showScreen('scr-game');
+            setTimeout(initCanvas, 100);
+            updateUI();
+        }
+
+        function initCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = brushInput.value;
+            ctx.strokeStyle = '#000000';
+        }
+
+        function updateUI() {
+            clearCanvas();
+            hintImg.innerText = '';
+            patternText.textContent = '';
+            
+            if (mode === 'write') {
+                palette.style.display = 'flex';
+                sketchDisplay.style.display = 'none';
+                svgLayer.style.display = 'flex';
+                if (type === 'numbers') {
+                    hintImg.innerText = '🔢';
+                    patternText.textContent = (index + 1);
+                } else {
+                    hintImg.innerText = dataWords[index].i;
+                    patternText.textContent = dataWords[index].t;
+                }
+            } else {
+                palette.style.display = 'flex';
+                svgLayer.style.display = 'none';
+                sketchDisplay.style.display = 'block';
+                hintImg.innerText = '';
+                
+                let currentSketchList = sketches[type];
+                sketchDisplay.src = currentSketchList[index % currentSketchList.length];
+            }
+        }
+
+        function finishAction() {
+            let maxIndex = (mode === 'color') ? (sketches[type].length - 1) : (type === 'numbers' ? 9 : dataWords.length - 1);
+            
+            sfxSuccess.play();
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+            if (index >= maxIndex) {
+                setTimeout(() => { document.getElementById('modal-finish').style.display = 'flex'; }, 500);
+            } else {
+                index++;
+                setTimeout(updateUI, 1000);
+            }
+        }
+
+        function goToHome() { showScreen('scr-welcome'); }
+        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); isCanvasDirty = false; btnNext.disabled = true; }
+        function changeBrush(c) { ctx.strokeStyle = c; }
+        function changeBrushSize(s) { ctx.lineWidth = s; }
+
+        function draw(e) {
+            if (!painting) return;
+            const rect = canvas.getBoundingClientRect();
+            let x = (e.clientX || (e.touches ? e.touches[0].clientX : 0)) - rect.left;
+            let y = (e.clientY || (e.touches ? e.touches[0].clientY : 0)) - rect.top;
+            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+            if(!isCanvasDirty) { isCanvasDirty = true; btnNext.disabled = false; }
+        }
+
+        function prevStep() { if (index > 0) { index--; updateUI(); } }
+
+        canvas.addEventListener('mousedown', (e) => { painting = true; draw(e); });
+        canvas.addEventListener('mouseup', () => { painting = false; ctx.beginPath(); });
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); painting = true; draw(e); });
+        canvas.addEventListener('touchend', () => { painting = false; ctx.beginPath(); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+    </script>
+</body>
+</html>
