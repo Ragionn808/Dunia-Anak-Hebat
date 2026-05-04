@@ -117,7 +117,9 @@
 <body>
 
     <audio id="bg-music" loop src="musik.mp3"></audio>
-    <audio id="sfx-success" src="Sound effect yeay.mp3"></audio>
+    <audio id="sfx1" src="Sound effect yeay.mp3"></audio>
+    <audio id="sfx2" src="Sound effect ta daa.mp3"></audio>
+    <audio id="sfx3" src="Sound effect good job.mp3"></audio>
 
     <button id="btn-music-toggle" onclick="toggleMusic()">🔊</button>
 
@@ -243,6 +245,20 @@
             }
         }
 
+        const successSounds = [
+            document.getElementById('sfx1'),
+            document.getElementById('sfx2'),
+            document.getElementById('sfx3')
+        ];
+        
+        function playRandomSound() {
+            const randomIndex = Math.floor(Math.random() * successSounds.length);
+            const sound = successSounds[randomIndex];
+        
+            sound.currentTime = 0;
+            sound.play();
+        }
+
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -294,7 +310,7 @@
         function finishAction() {
             let maxIndex = (mode === 'color') ? (sketches[type].length - 1) : (type === 'numbers' ? 9 : dataWords.length - 1);
             
-            sfxSuccess.play();
+            playRandomSound();
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
 
             if (index >= maxIndex) {
