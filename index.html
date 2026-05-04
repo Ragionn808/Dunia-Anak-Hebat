@@ -250,12 +250,23 @@
             document.getElementById('sfx3')
         ];
         
-        function playRandomSound() {
-            const randomIndex = Math.floor(Math.random() * successSounds.length);
-            const sound = successSounds[randomIndex];
+        let currentSoundIndex = 0;
         
-            sound.currentTime = 0;
-            sound.play();
+        function playNextSound() {
+            const sound = successSounds[currentSoundIndex];
+        
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(err => console.log("Audio error:", err));
+            }
+        
+            // pindah ke sound berikutnya
+            currentSoundIndex++;
+        
+            // kalau sudah di akhir, balik ke awal
+            if (currentSoundIndex >= successSounds.length) {
+                currentSoundIndex = 0;
+            }
         }
 
         function showScreen(id) {
@@ -309,7 +320,7 @@
         function finishAction() {
             let maxIndex = (mode === 'color') ? (sketches[type].length - 1) : (type === 'numbers' ? 9 : dataWords.length - 1);
             
-            playRandomSound();
+            playNextSound();
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
 
             if (index >= maxIndex) {
