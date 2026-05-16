@@ -14,9 +14,8 @@
             margin: 0; 
             overflow: hidden; 
             touch-action: none;
-
             background: url('background.jpeg') no-repeat center center;
-            background-size: contain;
+            background-size: cover;
             background-color: #87CEEB; /* warna cadangan */
         }
         html, body {
@@ -52,6 +51,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 100%;
         }
         
         .screen { display: none; height: 100vh; width: 100vw; flex-direction: column; align-items: center; justify-content: center; position: absolute; }
@@ -75,16 +75,32 @@
 
         .canvas-container { 
             position: relative; background: white; border: 12px solid var(--yellow); 
-            border-radius: 40px; width: 92vw; height: 55vh;
+            border-radius: 40px; width: 92vw; height: 50vh;
             box-shadow: 0 15px 30px rgba(0,0,0,0.1);
             display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
         }
         canvas { position: absolute; top: 0; left: 0; z-index: 10; cursor: crosshair; }
 
-        #hint-img { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); font-size: 70px; z-index: 2; }
+        #hint-img { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 50px; z-index: 2; }
 
-        .svg-pattern-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 1; }
-        #pattern-text { letter-spacing: 15px; }
+        .svg-pattern-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            pointer-events: none; 
+            z-index: 1; 
+        }
+        
+        /* Menggunakan viewBox agar teks menyesuaikan lebar container */
+        .svg-pattern-layer svg {
+            width: 90%;
+            height: auto;
+        }
 
         .palette { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; justify-content: center; max-width: 95vw; background: white; padding: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .color-dot { width: 35px; height: 35px; border-radius: 50%; border: 3px solid #f0f0f0; cursor: pointer; transition: 0.2s; }
@@ -102,15 +118,17 @@
         }
         
         @media (max-width: 768px) {
-    .btn-menu {
-        width: 90%;
-        font-size: 18px;
-    }
-
-    .canvas-container {
-        height: 50vh;
-    }
-}
+            .btn-menu {
+                width: 80%;
+                font-size: 18px;
+            }
+            .canvas-container {
+                height: 45vh;
+            }
+            #hint-img {
+                font-size: 40px;
+            }
+        }
 
     </style>
 </head>
@@ -123,10 +141,12 @@
 
     <button id="btn-music-toggle" onclick="toggleMusic()">🔊</button>
 
-    <div class="menu-container">
-    <button class="btn-menu" style="background: var(--blue);" onclick="startApp(); showScreen('scr-submenu-write')">✍️ MENULIS</button>
-    <button class="btn-menu" style="background: var(--pink);" onclick="startApp(); showScreen('scr-diff-color')">🎨 MEWARNAI</button>
-</div>
+    <div class="screen active" id="scr-welcome">
+        <div class="menu-container">
+            <button class="btn-menu" style="background: var(--blue);" onclick="startApp(); showScreen('scr-submenu-write')">✍️ MENULIS</button>
+            <button class="btn-menu" style="background: var(--pink);" onclick="startApp(); showScreen('scr-diff-color')">🎨 MEWARNAI</button>
+        </div>
+    </div>
 
     <div class="screen" id="scr-submenu-write" style="background: var(--blue);">
         <button class="btn-back-top" onclick="showScreen('scr-welcome')">Kembali</button>
@@ -149,7 +169,7 @@
         <div class="canvas-container" id="container">
             <div id="hint-img"></div>
             <div class="svg-pattern-layer" id="svg-layer">
-                <svg width="100%" height="250">
+                <svg viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet">
                     <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
                           font-family="Arial" font-size="120" font-weight="bold"
                           fill="none" stroke="#D3D3D3" stroke-width="3" 
@@ -231,7 +251,7 @@
         function startApp() {
             bgMusic.play().catch(e => console.log("Audio play blocked"));
             bgMusic.volume = 0.2;
-            musicToggle.style.display = 'flex'; // Tampilkan tombol musik
+            musicToggle.style.display = 'flex'; 
         }
 
         function toggleMusic() {
@@ -260,10 +280,8 @@
                 sound.play().catch(err => console.log("Audio error:", err));
             }
         
-            // pindah ke sound berikutnya
             currentSoundIndex++;
         
-            // kalau sudah di akhir, balik ke awal
             if (currentSoundIndex >= successSounds.length) {
                 currentSoundIndex = 0;
             }
@@ -306,6 +324,14 @@
                     hintImg.innerText = dataWords[index].i;
                     patternText.textContent = dataWords[index].t;
                 }
+                
+                // Atur jarak huruf agar tidak terlalu lebar di layar HP
+                if (patternText.textContent.length > 5) {
+                    patternText.style.letterSpacing = "5px";
+                } else {
+                    patternText.style.letterSpacing = "15px";
+                }
+
             } else {
                 palette.style.display = 'flex';
                 svgLayer.style.display = 'none';
@@ -353,6 +379,8 @@
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); painting = true; draw(e); });
         canvas.addEventListener('touchend', () => { painting = false; ctx.beginPath(); });
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+        
+        window.addEventListener('resize', initCanvas);
     </script>
 </body>
 </html>
