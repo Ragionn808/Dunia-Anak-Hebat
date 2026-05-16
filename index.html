@@ -15,7 +15,7 @@
             overflow: hidden; 
             touch-action: none;
             background: url('background.jpeg') no-repeat center center;
-            background-size: cover;
+            background-size: contain;
             background-color: #87CEEB; /* warna cadangan */
         }
         html, body {
@@ -78,7 +78,7 @@
             border: 12px solid var(--yellow); 
             border-radius: 40px; 
             width: 90vw; 
-            height: 52vh;
+            height: 50vh;
             max-width: 600px;
             box-shadow: 0 15px 30px rgba(0,0,0,0.1);
             display: flex; 
@@ -92,7 +92,7 @@
 
         #hint-img { 
             position: absolute; 
-            top: 15px; 
+            top: 20px; 
             left: 50%; 
             transform: translateX(-50%); 
             font-size: 70px; 
@@ -115,7 +115,7 @@
         .svg-pattern-layer svg {
             width: 100%;
             height: 100%;
-            padding: 0 5px;
+            padding: 0 10px;
         }
 
         .palette { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; justify-content: center; max-width: 95vw; background: white; padding: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -135,8 +135,8 @@
         
         @media (max-width: 768px) {
             .btn-menu { width: 85%; font-size: 18px; }
-            .canvas-container { height: 48vh; }
-            #hint-img { font-size: 55px; top: 10px; }
+            .canvas-container { height: 45vh; }
+            #hint-img { font-size: 55px; top: 15px; }
         }
 
     </style>
@@ -180,10 +180,10 @@
             <div class="svg-pattern-layer" id="svg-layer">
                 <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
                     <text x="50%" y="65%" text-anchor="middle" dominant-baseline="middle" 
-                          font-family="'Fredoka One', cursive" font-size="350" font-weight="bold"
-                          fill="none" stroke="#D3D3D3" stroke-width="5" 
+                          font-family="Arial" font-size="250" font-weight="bold"
+                          fill="none" stroke="#D3D3D3" stroke-width="4" 
                           stroke-dasharray="15,15" id="pattern-text"
-                          textLength="950" lengthAdjust="spacingAndGlyphs"></text>
+                          textLength="850" lengthAdjust="spacingAndGlyphs"></text>
                 </svg>
             </div>
             <img id="sketch-display" src="" style="position: absolute; width: 100%; height: 100%; object-fit: contain; opacity: 0.3; display: none; pointer-events: none; z-index: 1;">
@@ -207,7 +207,7 @@
 
         <div class="brush-control">
             <span>✏️ Ukuran:</span>
-            <input type="range" id="brushSize" min="5" max="60" value="20" oninput="changeBrushSize(this.value)">
+            <input type="range" id="brushSize" min="5" max="60" value="15" oninput="changeBrushSize(this.value)">
         </div>
 
         <div class="controls">
@@ -322,6 +322,7 @@
                 palette.style.display = 'flex';
                 sketchDisplay.style.display = 'none';
                 svgLayer.style.display = 'flex';
+                
                 if (type === 'numbers') {
                     hintImg.innerText = '🔢';
                     patternText.textContent = (index + 1);
@@ -330,16 +331,17 @@
                     patternText.textContent = dataWords[index].t;
                 }
 
-                // Menyesuaikan lebar textLength agar huruf tetap proporsional
+                // Pengaturan textLength untuk memberi jarak dan memastikan teks besar muat
                 const textLength = patternText.textContent.length;
                 if (textLength > 6) {
-                    patternText.setAttribute('textLength', '980');
-                } else if (textLength > 4) {
+                    patternText.setAttribute('textLength', '900');
+                    patternText.setAttribute('font-size', '180'); // Font sedikit dikecilkan jika kata sangat panjang
+                } else if (textLength > 1) {
                     patternText.setAttribute('textLength', '850');
-                } else if (textLength >= 2) {
-                    patternText.setAttribute('textLength', '500'); // Untuk angka belasan
+                    patternText.setAttribute('font-size', '250');
                 } else {
-                    patternText.setAttribute('textLength', '300'); // Untuk satu huruf/angka
+                    patternText.setAttribute('textLength', '250'); // Untuk angka 1 digit
+                    patternText.setAttribute('font-size', '350'); // Angka 1 digit sangat besar
                 }
 
             } else {
@@ -354,7 +356,7 @@
         }
 
         function finishAction() {
-            // maxIndex diatur ke 19 untuk angka (1-20)
+            // maxIndex untuk angka sekarang sampai 20 (index 19)
             let maxIndex = (mode === 'color') ? (sketches[type].length - 1) : (type === 'numbers' ? 19 : dataWords.length - 1);
             
             playNextSound();
